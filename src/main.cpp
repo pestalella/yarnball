@@ -9,21 +9,20 @@
 // UPDATED: 2018-08-08
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifdef __APPLE__
-#include <GLUT/glut.h>
-#else
-#include <GL/glut.h>
-#endif
+#include "sphere.h"
 
 #include <IL/il.h>
+#include <GL/glut.h>
+
+#define GL_GLEXT_PROTOTYPES
+#include <GL/glext.h>
 
 #include <iostream>
 #include <sstream>
 #include <iomanip>
 #include <fstream>
-#include "Bmp.h"
-#include "Sphere.h"
 
+//void glGenerateMipmap(	GLenum target);
 
 // GLUT CALLBACK functions
 void displayCB();
@@ -47,7 +46,7 @@ GLuint loadTexture(const char* fileName, bool wrap=true);
 
 
 // constants
-const int   SCREEN_WIDTH    = 1500;
+const int   SCREEN_WIDTH    = 500;
 const int   SCREEN_HEIGHT   = 500;
 const float CAMERA_DISTANCE = 4.0f;
 const int   TEXT_WIDTH      = 8;
@@ -71,25 +70,16 @@ int imageWidth;
 int imageHeight;
 
 // sphere: min sector = 3, min stack = 2
-Sphere sphere1(1.0f, 36, 18, false);    // radius, sectors, stacks, non-smooth (flat) shading
-Sphere sphere2(1.0f, 36, 18);           // radius, sectors, stacks, smooth(default)
+Sphere sphere2(1.0f, 72, 36, false);           // radius, sectors, stacks, smooth(default)
 
-
-
-///////////////////////////////////////////////////////////////////////////////
-// initialize GLUT for windowing
-///////////////////////////////////////////////////////////////////////////////
+/**
+ * initialize GLUT for windowing
+ **/
 int initGLUT(int &argc, char **argv)
 {
-    // GLUT stuff for windowing
-    // initialization openGL window.
-    // it is called before any other GLUT routine
     glutInit(&argc, argv);
-
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_STENCIL);   // display mode
-
     glutInitWindowSize(screenWidth, screenHeight);  // window size
-
     glutInitWindowPosition(100, 100);               // window location
 
     // finally, create a window with openGL context
@@ -110,10 +100,10 @@ int initGLUT(int &argc, char **argv)
 
 
 
-///////////////////////////////////////////////////////////////////////////////
-// initialize OpenGL
-// disable unused features
-///////////////////////////////////////////////////////////////////////////////
+/**
+* initialize OpenGL
+* disable unused features
+**/
 void initGL()
 {
     glShadeModel(GL_SMOOTH);                    // shading mathod: GL_SMOOTH or GL_FLAT
@@ -129,8 +119,8 @@ void initGL()
     glEnable(GL_CULL_FACE);
 
     // track material ambient and diffuse from surface color, call it before glEnable(GL_COLOR_MATERIAL)
-    //glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-    //glEnable(GL_COLOR_MATERIAL);
+    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+    glEnable(GL_COLOR_MATERIAL);
 
     glClearColor(0, 0, 0, 0);                   // background color
     glClearStencil(0);                          // clear stencil buffer
@@ -140,12 +130,10 @@ void initGL()
     initLights();
 }
 
-
-
-///////////////////////////////////////////////////////////////////////////////
-// write 2d text using GLUT
-// The projection matrix must be set to orthogonal before call this function.
-///////////////////////////////////////////////////////////////////////////////
+/**
+ * Write 2d text using GLUT
+ * The projection matrix must be set to orthogonal before call this function.
+**/
 void drawString(const char *str, int x, int y, float color[4], void *font)
 {
     glPushAttrib(GL_LIGHTING_BIT | GL_CURRENT_BIT); // lighting and color mask
@@ -277,17 +265,15 @@ GLuint loadTexture(const char* fileName, bool wrap)
     ilLoadImage(fileName);
     ILint width = ilGetInteger(IL_IMAGE_WIDTH);
     ILint height = ilGetInteger(IL_IMAGE_HEIGHT);
-    ILenum format = ilGetInteger(IL_IMAGE_FORMAT);
-    ILenum type = ilGetInteger(IL_IMAGE_TYPE);
 
     /* Convert image to RGBA with unsigned byte data type */
     ilConvertImage(IL_RGBA, IL_UNSIGNED_BYTE); 
     /* Create and load textures to OpenGL */
     glGenTextures(1, &textureID); /* Texture name generation */
     glBindTexture(GL_TEXTURE_2D, textureID); 
-    glTexImage2D(GL_TEXTURE_2D, 0, type, 
-                    ilGetInteger(IL_IMAGE_WIDTH),
-                    ilGetInteger(IL_IMAGE_HEIGHT), 
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 
+                    width,
+                    height, 
                     0, GL_RGBA, GL_UNSIGNED_BYTE,
                     ilGetData());
 
@@ -299,37 +285,16 @@ GLuint loadTexture(const char* fileName, bool wrap)
 
 //    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    //glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 
     // if wrap is true, the texture wraps over at the edges (repeat)
     //       ... false, the texture ends at the edges (clamp)
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap ? GL_REPEAT : GL_CLAMP);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap ? GL_REPEAT : GL_CLAMP);
-    //glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    //glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    // copy texture data
-//    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, type, data);
-    //glGenerateMipmap(GL_TEXTURE_2D);
-
-    // build our texture mipmaps
-    // switch(bpp)
-    // {
-    // case 8:
-    //     gluBuild2DMipmaps(GL_TEXTURE_2D, 1, width, height, GL_LUMINANCE, type, data);
-    //     break;
-    // case 24:
-    //     gluBuild2DMipmaps(GL_TEXTURE_2D, 3, width, height, GL_RGB, type, data);
-    //     break;
-    // case 32:
-    //     gluBuild2DMipmaps(GL_TEXTURE_2D, 4, width, height, GL_RGBA, type, data);
-    //     break;
-    // }
 
     return textureID;
 }
-
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -449,32 +414,9 @@ void displayCB()
     glMaterialfv(GL_FRONT, GL_SPECULAR,  specular);
     glMaterialf(GL_FRONT, GL_SHININESS, shininess);
 
-    // line color
-    float lineColor[] = {0.2f, 0.2f, 0.2f, 1};
-
-    // draw left flat sphere with lines
-    glPushMatrix();
-    glTranslatef(-2.5f, 0, 0);
-    glRotatef(cameraAngleX, 1, 0, 0);   // pitch
-    glRotatef(cameraAngleY, 0, 1, 0);   // heading
-    glRotatef(-90, 1, 0, 0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    sphere1.drawWithLines(lineColor);
-    //sphere1.drawLines(lineColor);
-    glPopMatrix();
-
-    // draw centre smooth sphere with line
-    glPushMatrix();
-    glRotatef(cameraAngleX, 1, 0, 0);
-    glRotatef(cameraAngleY, 0, 1, 0);
-    glRotatef(-90, 1, 0, 0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    sphere2.drawWithLines(lineColor);
-    glPopMatrix();
-
     // draw right sphere with texture
     glPushMatrix();
-    glTranslatef(2.5f, 0, 0);
+    glTranslatef(0, 0, 0);
     glRotatef(cameraAngleX, 1, 0, 0);
     glRotatef(cameraAngleY, 0, 1, 0);
     glRotatef(-90, 1, 0, 0);
@@ -482,23 +424,11 @@ void displayCB()
     sphere2.draw();
     glPopMatrix();
 
-    /*
-    // using GLU quadric object
-    GLUquadricObj* obj = gluNewQuadric();
-    gluQuadricDrawStyle(obj, GLU_FILL); // GLU_FILL, GLU_LINE, GLU_SILHOUETTE, GLU_POINT
-    gluQuadricNormals(obj, GL_SMOOTH);
-    gluQuadricTexture(obj, GL_TRUE);
-    glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
-    glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
-    gluSphere(obj, 2.0, 50, 50); // radius, slice, stack
-    */
-
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    showInfo();     // print max range of glDrawRangeElements
+//    showInfo();     // print max range of glDrawRangeElements
 
     glPopMatrix();
-
     glutSwapBuffers();
 }
 
@@ -599,8 +529,8 @@ void mouseMotionCB(int x, int y)
 {
     if(mouseLeftDown)
     {
-        cameraAngleY += (x - mouseX);
-        cameraAngleX += (y - mouseY);
+        cameraAngleY += 0.1*(x - mouseX);
+        cameraAngleX += 0.1*(y - mouseY);
         mouseX = x;
         mouseY = y;
     }

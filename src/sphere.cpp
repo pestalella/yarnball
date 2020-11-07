@@ -9,42 +9,22 @@
 // UPDATED: 2020-05-20
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifdef _WIN32
-#include <windows.h>    // include windows.h to avoid thousands of compile errors even though this class is not depending on Windows
-#endif
+#include "sphere.h"
 
-#ifdef __APPLE__
-#include <OpenGL/gl.h>
-#else
 #include <GL/gl.h>
-#endif
-
 #include <iostream>
 #include <iomanip>
 #include <cmath>
-#include "Sphere.h"
 
-
-
-// constants //////////////////////////////////////////////////////////////////
 const int MIN_SECTOR_COUNT = 3;
 const int MIN_STACK_COUNT  = 2;
 
-
-
-///////////////////////////////////////////////////////////////////////////////
-// ctor
-///////////////////////////////////////////////////////////////////////////////
 Sphere::Sphere(float radius, int sectors, int stacks, bool smooth) : interleavedStride(32)
 {
     set(radius, sectors, stacks, smooth);
 }
 
 
-
-///////////////////////////////////////////////////////////////////////////////
-// setters
-///////////////////////////////////////////////////////////////////////////////
 void Sphere::set(float radius, int sectors, int stacks, bool smooth)
 {
     this->radius = radius;
@@ -175,33 +155,6 @@ void Sphere::drawWithLines(const float lineColor[4]) const
     // draw lines with VA
     drawLines(lineColor);
 }
-
-
-
-/*@@ FIXME: when the radius  = 0
-///////////////////////////////////////////////////////////////////////////////
-// update vertex positions only
-///////////////////////////////////////////////////////////////////////////////
-void Sphere::updateRadius()
-{
-    float scale = sqrtf(radius * radius / (vertices[0] * vertices[0] + vertices[1] * vertices[1] + vertices[2] * vertices[2]));
-
-    std::size_t i, j;
-    std::size_t count = vertices.size();
-    for(i = 0, j = 0; i < count; i += 3, j += 8)
-    {
-        vertices[i]   *= scale;
-        vertices[i+1] *= scale;
-        vertices[i+2] *= scale;
-
-        // for interleaved array
-        interleavedVertices[j]   *= scale;
-        interleavedVertices[j+1] *= scale;
-        interleavedVertices[j+2] *= scale;
-    }
-}
-*/
-
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -519,9 +472,9 @@ void Sphere::addVertex(float x, float y, float z)
 
 
 
-///////////////////////////////////////////////////////////////////////////////
-// add single normal to array
-///////////////////////////////////////////////////////////////////////////////
+/**
+  * add single normal to array
+**/
 void Sphere::addNormal(float nx, float ny, float nz)
 {
     normals.push_back(nx);
@@ -531,20 +484,20 @@ void Sphere::addNormal(float nx, float ny, float nz)
 
 
 
-///////////////////////////////////////////////////////////////////////////////
-// add single texture coord to array
-///////////////////////////////////////////////////////////////////////////////
+/**
+  * add single texture coord to array
+ **/
 void Sphere::addTexCoord(float s, float t)
 {
-    texCoords.push_back(s);
-    texCoords.push_back(t);
+    texCoords.push_back(2*s);
+    texCoords.push_back(2*t);
 }
 
 
 
-///////////////////////////////////////////////////////////////////////////////
+/**
 // add 3 indices to array
-///////////////////////////////////////////////////////////////////////////////
+ **/
 void Sphere::addIndices(unsigned int i1, unsigned int i2, unsigned int i3)
 {
     indices.push_back(i1);
@@ -554,10 +507,10 @@ void Sphere::addIndices(unsigned int i1, unsigned int i2, unsigned int i3)
 
 
 
-///////////////////////////////////////////////////////////////////////////////
-// return face normal of a triangle v1-v2-v3
-// if a triangle has no surface (normal length = 0), then return a zero vector
-///////////////////////////////////////////////////////////////////////////////
+/**
+  * return face normal of a triangle v1-v2-v3
+  * if a triangle has no surface (normal length = 0), then return a zero vector
+ **/
 std::vector<float> Sphere::computeFaceNormal(float x1, float y1, float z1,  // v1
                                              float x2, float y2, float z2,  // v2
                                              float x3, float y3, float z3)  // v3
