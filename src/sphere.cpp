@@ -489,8 +489,8 @@ void Sphere::addNormal(float nx, float ny, float nz)
  **/
 void Sphere::addTexCoord(float s, float t)
 {
-    texCoords.push_back(2*s);
-    texCoords.push_back(2*t);
+    texCoords.push_back(s);
+    texCoords.push_back(t);
 }
 
 

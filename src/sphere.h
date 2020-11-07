@@ -9,8 +9,8 @@
 // UPDATED: 2020-05-20
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef GEOMETRY_SPHERE_H
-#define GEOMETRY_SPHERE_H
+#ifndef SPHERE_H
+#define SPHERE_H
 
 #include <vector>
 

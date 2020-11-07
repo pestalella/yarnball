@@ -10,6 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "sphere.h"
+#include "AnimatedGifSaver.h"
 
 #include <IL/il.h>
 #include <GL/glut.h>
@@ -22,8 +23,6 @@
 #include <iomanip>
 #include <fstream>
 
-//void glGenerateMipmap(	GLenum target);
-
 // GLUT CALLBACK functions
 void displayCB();
 void reshapeCB(int w, int h);
@@ -32,9 +31,6 @@ void keyboardCB(unsigned char key, int x, int y);
 void mouseCB(int button, int stat, int x, int y);
 void mouseMotionCB(int x, int y);
 
-//void initGL();
-//int  initGLUT(int argc, char **argv);
-//bool initSharedMem();
 void clearSharedMem();
 void initLights();
 void setCamera(float posX, float posY, float posZ, float targetX, float targetY, float targetZ);
@@ -43,7 +39,6 @@ void drawString3D(const char *str, float pos[3], float color[4], void *font);
 void toOrtho();
 void toPerspective();
 GLuint loadTexture(const char* fileName, bool wrap=true);
-
 
 // constants
 const int   SCREEN_WIDTH    = 500;
@@ -69,8 +64,10 @@ ILuint texId;
 int imageWidth;
 int imageHeight;
 
+bool ballRotating = false;
+
 // sphere: min sector = 3, min stack = 2
-Sphere sphere2(1.0f, 72, 36, false);           // radius, sectors, stacks, smooth(default)
+Sphere sphere2(1.0f, 72, 36);           // radius, sectors, stacks, smooth(default)
 
 /**
  * initialize GLUT for windowing
@@ -194,7 +191,8 @@ bool initSharedMem()
     mouseLeftDown = mouseRightDown = mouseMiddleDown = false;
     mouseX = mouseY = 0;
 
-    cameraAngleX = cameraAngleY = 0.0f;
+    cameraAngleX = 0.0f;
+    cameraAngleY = 90.0f;
     cameraDistance = CAMERA_DISTANCE;
 
     drawMode = 0; // 0:fill, 1: wireframe, 2:points
@@ -442,22 +440,67 @@ void reshapeCB(int w, int h)
 }
 
 
+AnimatedGifSaver saver(1,1);
+bool savingAnimation = false;
+
+
+void saveScreenShot()
+{
+    std::vector<unsigned char> frame(screenWidth*screenHeight*3);
+    glReadPixels(0, 0, screenWidth, screenHeight, GL_RGB, GL_UNSIGNED_BYTE, &frame[0]);
+    saver.AddFrame(&frame[0],0.033);
+}
+
+
 void timerCB(int millisec)
 {
     glutTimerFunc(millisec, timerCB, millisec);
+
+    if (ballRotating) {
+        cameraAngleY += 1.0;
+        cameraAngleX += 0.5;
+    }
+    if (cameraAngleX > 360)
+        cameraAngleX -= 360;
+    if (cameraAngleX < 0)
+        cameraAngleX += 360;
+    if (cameraAngleY > 360)
+        cameraAngleY -= 360;
+    if (cameraAngleY < 0)
+        cameraAngleY += 360;
+
+    if (savingAnimation)
+        saveScreenShot();
+
+
     glutPostRedisplay();
 }
 
 
-void keyboardCB(unsigned char key, int x, int y)
+void keyboardCB(unsigned char key, int, int )
 {
     switch(key)
     {
     case 27: // ESCAPE
-        clearSharedMem();
+//        clearSharedMem();
         exit(0);
         break;
-
+    case 'r':
+    case 'R':
+        // rotate ball
+        ballRotating = !ballRotating;
+        break;
+    case 's':
+    case 'S':
+        if (savingAnimation) {
+            saver.Save("animation.gif");
+            savingAnimation = false;
+        }
+        else {
+            saver = AnimatedGifSaver(screenWidth, screenWidth);
+            savingAnimation = true;
+        }
+        break;
     case 'd': // switch rendering modes (fill -> wire -> point)
     case 'D':
         ++drawMode;
@@ -540,7 +583,6 @@ void mouseMotionCB(int x, int y)
         mouseY = y;
     }
 }
-
 
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -6,19 +6,19 @@ LD = g++
 
 INC = 
 LIBDIR = 
-LIB = -lglut -lGLU -lGL -lIL -lpng -lm
+LIB = -lgif -lglut -lGLU -lGL -lIL -lpng -lm
 LDFLAGS =
-LDFLAGS = -pg -g3
+#LDFLAGS = -pg -g3
 
-CFLAGS = -Wall -O2
-CFLAGS = -g3
+CFLAGS = -Wall -W -O2
+#CFLAGS = -g3
 OBJDIR = build
 
 
 SRCDIR = src
 OUT_BINARY = $(OBJDIR)/yarnball
 
-SRC=main.cpp sphere.cpp
+SRC=main.cpp sphere.cpp AnimatedGifSaver.cpp
 _OBJ := $(addsuffix .o,$(basename $(SRC)))
 OBJS = $(patsubst %,$(OBJDIR)/%,$(_OBJ))
 
