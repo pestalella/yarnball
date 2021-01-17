@@ -18,7 +18,7 @@ OBJDIR = build
 SRCDIR = src
 OUT_BINARY = $(OBJDIR)/yarnball
 
-SRC=main.cpp sphere.cpp AnimatedGifSaver.cpp
+SRC=main.cpp Point.cpp sphere.cpp YarnBall.cpp AnimatedGifSaver.cpp
 _OBJ := $(addsuffix .o,$(basename $(SRC)))
 OBJS = $(patsubst %,$(OBJDIR)/%,$(_OBJ))
 
