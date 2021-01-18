@@ -2,7 +2,6 @@
 #include <Windows.h>
 #endif
 
-#include "Shader.h"
 #include "sphere.h"
 #include "YarnBall.h"
 #include "AnimatedGifSaver.h"
@@ -36,11 +35,10 @@ float cameraDistance;
 int drawMode;
 int imageWidth;
 int imageHeight;
-
 bool ballRotating = false;
 
-// sphere: min sector = 3, min stack = 2
-//Sphere sphere2(1.0f, 72, 36);           // radius, sectors, stacks, smooth(default)
+std::string yarnballFile;
+int subdivLevel = 0;
 YarnBall yarnBall;
 
 void displayCB()
@@ -70,12 +68,8 @@ void displayCB()
     glRotatef(cameraAngleX, 1, 0, 0);
     glRotatef(cameraAngleY, 0, 1, 0);
     glRotatef(-90, 1, 0, 0);
-//    glBindTexture(GL_TEXTURE_2D, textureID);
-//    sphere2.draw();
     yarnBall.draw();
     glPopMatrix();
-
-//    glBindTexture(GL_TEXTURE_2D, 0);
 
     glPopMatrix();
     glutSwapBuffers();
@@ -113,11 +107,18 @@ AnimatedGifSaver saver(1,1);
 bool savingAnimation = false;
 
 
-void saveScreenShot()
+void saveAnimationScreenShot()
 {
     std::vector<unsigned char> frame(screenWidth*screenHeight*3);
     glReadPixels(0, 0, screenWidth, screenHeight, GL_RGB, GL_UNSIGNED_BYTE, &frame[0]);
-    //    saver.AddFrame(&frame[0],0.033);
+    saver.AddFrame(&frame[0],0.033);
+}
+
+void saveSingleScreenShot()
+{
+    std::vector<unsigned char> frame(screenWidth*screenHeight*3);
+    glReadPixels(0, 0, screenWidth, screenHeight, GL_RGB, GL_UNSIGNED_BYTE, &frame[0]);
+    saver.AddFrame(&frame[0],0.033);
 }
 
 
@@ -139,7 +140,7 @@ void timerCB(int millisec)
         cameraAngleY += 360;
 
     if (savingAnimation)
-        saveScreenShot();
+        saveAnimationScreenShot();
 
 
     glutPostRedisplay();
@@ -161,7 +162,11 @@ void keyboardCB(unsigned char key, int, int)
     case 's':
     case 'S':
         if (savingAnimation) {
-            saver.Save("animation.gif");
+            if (ballRotating) { 
+                saver.Save("animation.gif");
+            } else {
+                saveSingleScreenShot();
+            }
             savingAnimation = false;
         } else {
             saver = AnimatedGifSaver(screenWidth, screenWidth);
@@ -197,9 +202,12 @@ void resetCamera()
     cameraAngleX = 0.0f;
     cameraAngleY = 90.0f;
     cameraDistance = CAMERA_DISTANCE;
-
 }
 
+void loadColoredTris(std::string inFile, int subdivLevel)
+{
+    yarnBall = YarnBall::fromFile(inFile, subdivLevel);
+}
 
 void mouseCB(int button, int state, int x, int y)
 {
@@ -219,6 +227,7 @@ void mouseCB(int button, int state, int x, int y)
             mouseRightDown = true;
         } else if (state == GLUT_UP) {
             mouseRightDown = false;
+            loadColoredTris(yarnballFile, subdivLevel);
         }
     }
 
@@ -378,12 +387,6 @@ void toOrtho()
 }
 
 
-void loadColoredTris(std::string inFile, int subdivLevel)
-{
-    yarnBall = YarnBall::fromFile(inFile, subdivLevel);
-}
-
-
 void printUsage()
 {
     std::cout << "Usage:" << std::endl;
@@ -407,7 +410,6 @@ int main(int argc, char **argv)
     initGL();
     ilInit ();
 
-    int subdivLevel = 0;
     // Retrieve the options:
     int opt;
     while ( (opt = getopt(argc, argv, "s:h")) != -1 ) {  // for each option...
@@ -432,9 +434,9 @@ int main(int argc, char **argv)
         printUsage();
         exit(1);
     }  else {  // there is an input...
-        std::string inputFile = argv[argc-1];
+        yarnballFile = argv[argc-1];
         // Load color and geometry
-        loadColoredTris(inputFile, subdivLevel);
+        loadColoredTris(yarnballFile, subdivLevel);
     }
 
     glutMainLoop();
