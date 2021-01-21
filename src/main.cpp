@@ -6,8 +6,15 @@
 #include "YarnBall.h"
 #include "AnimatedGifSaver.h"
 
-#include <IL/il.h>
 #include <GL/glut.h>
+#include <IL/il.h>
+#include <IL/ilu.h>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+#include <glm/mat4x4.hpp> // glm::mat4
+#include <glm/ext/matrix_transform.hpp> // glm::translate, glm::rotate, glm::scale
+#include <glm/ext/matrix_clip_space.hpp> // glm::perspective
+#include <glm/ext/scalar_constants.hpp> // glm::pi
 
 #include <fstream>
 #include <getopt.h>
@@ -28,7 +35,7 @@ int screenHeight;
 bool mouseLeftDown;
 bool mouseRightDown;
 bool mouseMiddleDown;
-float mouseX, mouseY;
+int mouseX, mouseY;
 float cameraAngleX;
 float cameraAngleY;
 float cameraDistance;
@@ -37,9 +44,35 @@ int imageWidth;
 int imageHeight;
 bool ballRotating = false;
 
+GLfloat modelViewMatrix[16]; 
+
 std::string yarnballFile;
 int subdivLevel = 0;
 YarnBall yarnBall;
+
+float rad(float deg)
+{
+    return deg/180.0f*glm::pi<float>();
+}
+
+float deg(float rad)
+{
+    return rad*180.0f/glm::pi<float>();
+}
+
+glm::mat4 getPerspectiveMat()
+{
+    return glm::perspective(rad(40.0f), (float)(screenWidth)/screenHeight, 1.0f, 1000.0f);
+}
+
+glm::mat4 getViewMat()
+{
+	glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -cameraDistance));
+	view = glm::rotate(view, rad(cameraAngleX), glm::vec3(1.0f, 0.0f, 0.0f));
+	view = glm::rotate(view, rad(cameraAngleY), glm::vec3(0.0f, 1.0f, 0.0f));
+	view = glm::rotate(view, rad(-90), glm::vec3(1.0f, 0.0f, 0.0f));
+    return view;
+}
 
 void displayCB()
 {
@@ -49,7 +82,7 @@ void displayCB()
     // save the initial ModelView matrix before modifying ModelView matrix
     glPushMatrix();
 
-    // tramsform modelview matrix
+    // transform modelview matrix
     glTranslatef(0, 0, -cameraDistance);
 
     // set material
@@ -63,13 +96,10 @@ void displayCB()
     glMaterialf(GL_FRONT, GL_SHININESS, shininess);
 
     // draw right sphere with texture
-    glPushMatrix();
-    glTranslatef(0, 0, 0);
     glRotatef(cameraAngleX, 1, 0, 0);
     glRotatef(cameraAngleY, 0, 1, 0);
     glRotatef(-90, 1, 0, 0);
     yarnBall.draw();
-    glPopMatrix();
 
     glPopMatrix();
     glutSwapBuffers();
@@ -114,11 +144,22 @@ void saveAnimationScreenShot()
     saver.AddFrame(&frame[0],0.033);
 }
 
-void saveSingleScreenShot()
+void saveSingleScreenShot(std::string fileName)
 {
+    std::cout << "Saving single screenshot" << std::endl;
     std::vector<unsigned char> frame(screenWidth*screenHeight*3);
     glReadPixels(0, 0, screenWidth, screenHeight, GL_RGB, GL_UNSIGNED_BYTE, &frame[0]);
-    saver.AddFrame(&frame[0],0.033);
+    ILuint imgID;
+    ilEnable(IL_FILE_OVERWRITE);
+    ilGenImages(1, &imgID);
+    ilBindImage(imgID);
+    ilTexImage(screenWidth, screenHeight, 1, 3, IL_RGB, IL_UNSIGNED_BYTE, &frame[0]);
+    ilSave(IL_PNG, fileName.c_str());
+    ilDisable(IL_FILE_OVERWRITE);
+
+    if(ilGetError() != IL_NO_ERROR) {
+        std::cerr << "Error saving file " << fileName << ": " << iluErrorString(ilGetError()) << std::endl;
+    }
 }
 
 
@@ -161,16 +202,16 @@ void keyboardCB(unsigned char key, int, int)
         break;
     case 's':
     case 'S':
-        if (savingAnimation) {
-            if (ballRotating) { 
+        if (ballRotating) { 
+            if (savingAnimation) {
                 saver.Save("animation.gif");
+                savingAnimation = false;
             } else {
-                saveSingleScreenShot();
+                saver = AnimatedGifSaver(screenWidth, screenWidth);
+                savingAnimation = true;
             }
-            savingAnimation = false;
         } else {
-            saver = AnimatedGifSaver(screenWidth, screenWidth);
-            savingAnimation = true;
+            saveSingleScreenShot("screenshot.png");
         }
         break;
     case 'd': // switch rendering modes (fill -> wire -> point)
@@ -245,11 +286,12 @@ void mouseCB(int button, int state, int x, int y)
 void mouseMotionCB(int x, int y)
 {
     if (mouseLeftDown) {
-        cameraAngleY += 0.1*(x - mouseX);
-        cameraAngleX += 0.1*(y - mouseY);
+        cameraAngleY += 0.2*(x - mouseX);
+        cameraAngleX += 0.2*(y - mouseY);
         mouseX = x;
         mouseY = y;
     }
+
     // if (mouseRightDown) {
     //     cameraDistance -= (y - mouseY) * 0.2f;
     //     mouseY = y;
@@ -262,7 +304,7 @@ void mouseMotionCB(int x, int y)
 int initGLUT(int &argc, char **argv)
 {
     glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_STENCIL);   // display mode
+    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_STENCIL | GLUT_MULTISAMPLE);   // display mode
     glutInitWindowSize(screenWidth, screenHeight);  // window size
     glutInitWindowPosition(100, 100);               // window location
 
@@ -319,7 +361,7 @@ void initGL()
     glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_LIGHTING);
-//    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_MULTISAMPLE);
     glEnable(GL_CULL_FACE);
     glEnable(GL_NORMALIZE);
 
@@ -354,36 +396,6 @@ bool initSharedMem()
     drawMode = 0; // 0:fill, 1: wireframe, 2:points
 
     return true;
-}
-
-
-/**
- * set camera position and lookat direction
-**/
-void setCamera(float posX, float posY, float posZ, float targetX, float targetY, float targetZ)
-{
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    gluLookAt(posX, posY, posZ, targetX, targetY, targetZ, 0, 1, 0); // eye(x,y,z), focal(x,y,z), up(x,y,z)
-}
-
-
-/**
- * set projection matrix as orthogonal
-**/
-void toOrtho()
-{
-    // set viewport to be the entire window
-    glViewport(0, 0, (GLsizei)screenWidth, (GLsizei)screenHeight);
-
-    // set orthographic viewing frustum
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0, screenWidth, 0, screenHeight, -1, 1);
-
-    // switch to modelview matrix in order to set scene
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
 }
 
 

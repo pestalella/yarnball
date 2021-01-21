@@ -6,7 +6,7 @@ LD = g++
 
 INC = 
 LIBDIR = 
-LIB = -lgif -lglut -lGLU -lGL -lIL -lpng -lm
+LIB = -lgif -lglut -lGLU -lGL -lIL -lILU -lpng -lm
 LDFLAGS =
 #LDFLAGS = -pg -g3
 

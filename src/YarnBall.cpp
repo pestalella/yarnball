@@ -78,7 +78,6 @@ std::vector<float> divideTri(
 std::vector<Vec3> subdivide(const Vec3 &v0, const Vec3 &v1, const Vec3 &v2, int subdivLevel)
 {
     std::vector<Vec3> subTris;
-    const float eps = 0.005;
     if (subdivLevel > 0) {
         Vec3 m01 = (v0 + v1)*0.5f;
         Vec3 m02 = (v0 + v2)*0.5f;
@@ -115,6 +114,7 @@ YarnBall YarnBall::fromFile(std::string fileName, int subdivLevel)
 
     // Read color palette
     std::vector<float> palette(256*3);
+    int numColors = 0;
     while (std::getline(inFile, line)) {
         std::istringstream iss(line);
         float r, g, b;
@@ -123,12 +123,12 @@ YarnBall YarnBall::fromFile(std::string fileName, int subdivLevel)
             palette[3*idx + 0] = r;
             palette[3*idx + 1] = g;
             palette[3*idx + 2] = b;
-            std::cout << "color " << idx << ": [" << r << ", " << g << ", " << b << "]" << std::endl;
+            numColors++;
         } else {
             break;
         }
     }
-    std::cout << "Loaded " << palette.size()/3 << " colors" << std::endl;
+    std::cout << "Loaded " << numColors << " colors" << std::endl;
 
     // Read colored triangles
     std::vector<Vec3> triVerts;
