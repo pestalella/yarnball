@@ -1,4 +1,5 @@
 #include "Point.h"
+#include <cmath>
 
 Vec3::Vec3(float x, float y, float z) :
     x(x), y(y), z(z)
@@ -8,6 +9,11 @@ Vec3::Vec3(float x, float y, float z) :
 float Vec3::distSq(const Vec3 &p) const
 {
     return (p.x - x)*(p.x - x) + (p.y - y)*(p.y - y);
+}
+
+float Vec3::len() const
+{
+    return sqrt((*this)*(*this));
 }
 
 Vec3 Vec3::operator+(const Vec3 &p) const
@@ -35,4 +41,10 @@ Vec3 Vec3::operator^(const Vec3 &p) const
 Vec3 Vec3::operator*(float f) const
 {
     return Vec3(x*f, y*f, z*f);
+}
+
+// unit vector
+Vec3 Vec3::normalized() const
+{
+    return *this * (1.0/len());
 }

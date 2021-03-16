@@ -7,8 +7,8 @@ public:
 public:
     Vec3(float x, float y, float z);
     
-    // Operations
     float distSq(const Vec3 &p) const;
+    float len() const;
     // addition
     Vec3 operator+(const Vec3 &p) const;
     // subtraction
@@ -18,5 +18,7 @@ public:
     // cross product
     Vec3 operator^(const Vec3 &p) const;
     Vec3 operator*(float f) const;
+    // unit vector
+    Vec3 normalized() const;
 };
 

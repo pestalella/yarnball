@@ -48,6 +48,7 @@ GLfloat modelViewMatrix[16];
 
 std::string yarnballFile;
 int subdivLevel = 0;
+int lineWidth = 1;
 YarnBall yarnBall;
 
 float rad(float deg)
@@ -245,9 +246,9 @@ void resetCamera()
     cameraDistance = CAMERA_DISTANCE;
 }
 
-void loadColoredTris(std::string inFile, int subdivLevel)
+void loadColoredTris(std::string inFile, int subdivLevel, int lineWidth)
 {
-    yarnBall = YarnBall::fromFile(inFile, subdivLevel);
+    yarnBall = YarnBall::fromFile(inFile, subdivLevel, lineWidth);
 }
 
 void mouseCB(int button, int state, int x, int y)
@@ -268,7 +269,7 @@ void mouseCB(int button, int state, int x, int y)
             mouseRightDown = true;
         } else if (state == GLUT_UP) {
             mouseRightDown = false;
-            loadColoredTris(yarnballFile, subdivLevel);
+            loadColoredTris(yarnballFile, subdivLevel, lineWidth);
         }
     }
 
@@ -381,7 +382,7 @@ void initGL()
 /**
  * initialize global variables
 **/
-bool initSharedMem()
+bool initGlobalVars()
 {
     screenWidth = SCREEN_WIDTH;
     screenHeight = SCREEN_HEIGHT;
@@ -409,13 +410,14 @@ void printUsage()
     std::cout << "Options:" << std::endl;
     std::cout << " -s <subdivisions>\tSet the number of subdivision steps." << std::endl;
     std::cout << " \t\t\tDefault is 0 for no subdivision" << std::endl;
+    std::cout << " -w <line_width>\tSet the line width, in pixels" << std::endl;
+    std::cout << " \t\t\tDefault is 1 pixel" << std::endl;
     std::cout << " -h\t\t\tDisplay this help" << std::endl;
 }
 
 int main(int argc, char **argv)
 {
-    // init global vars
-    initSharedMem();
+    initGlobalVars();
 
     // init GLUT and GL
     initGLUT(argc, argv);
@@ -424,10 +426,13 @@ int main(int argc, char **argv)
 
     // Retrieve the options:
     int opt;
-    while ( (opt = getopt(argc, argv, "s:h")) != -1 ) {  // for each option...
+    while ( (opt = getopt(argc, argv, "s:w:h")) != -1 ) {  // for each option...
         switch ( opt ) {
             case 's':
                 subdivLevel = atoi(optarg);
+                break;
+            case 'w':
+                lineWidth = atoi(optarg);
                 break;
             case 'h':
                 printUsage();
@@ -448,7 +453,7 @@ int main(int argc, char **argv)
     }  else {  // there is an input...
         yarnballFile = argv[argc-1];
         // Load color and geometry
-        loadColoredTris(yarnballFile, subdivLevel);
+        loadColoredTris(yarnballFile, subdivLevel, lineWidth);
     }
 
     glutMainLoop();
